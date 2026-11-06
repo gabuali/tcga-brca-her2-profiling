@@ -1,0 +1,51 @@
+# ==============================================================================
+# TCGA-BRCA HER2 Profiling - .gitignore
+# ==============================================================================
+
+# OS & File Manager Metadata
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+desktop.ini
+
+# Python Caches & Environments
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+*.egg-info/
+.venv/
+env/
+venv/
+
+# R Environment & Sessions
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user
+
+# Large Level 3 Re-Normalized Genomic Matrices (>300 MB each)
+# (Regenerate on-demand via: Rscript src/normalize_rnaseq.R)
+results/matrix_normalized_linear.csv
+results/matrix_normalized_log2_stabilized.csv
+
+# Raw Uncompressed Genomic Count Matrix (>182 MB, exceeds GitHub 100 MB limit)
+# Note: The compressed version 'data/tcga.brca.rsem.csv.gz' (67 MB) is tracked.
+data/tcga.brca.rsem.csv
+
+# Deliverables Staging Directory & Local Release Zip
+TCGA_BRCA_HER2_Deliverables/
+TCGA_BRCA_HER2_Deliverables.zip
+
+# Challenge PDF & Private Scratch Notes
+Tempus_Pharma_RD_Coding_Challenge*.pdf
+notes.xlsx
+Notes_on_analysis.txt
+
+# Temporary Scratch Files & Editor Backups
+scratch/
+*.swp
+*.swo
+*~

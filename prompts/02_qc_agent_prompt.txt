@@ -1,0 +1,64 @@
+Please execute the following R analysis pipeline to diagnose, QC, filter, and normalize my pre-compiled RNA-Seq data, including an automated PCA-based sample outlier detection step and visual tracking.
+
+Data Layout Context:
+The input file is a wide matrix where rows represent samples/patients, and columns start with metadata fields (patient_id, bcr_patient_barcode, sample_type) followed by individual gene name columns (A1BG, A1CF, A2BP1, ...). 
+
+Follow these exact sequential steps and logic:
+
+Step 1: Data Parsing & Matrix Separation
+* Load the data file into R.
+* Separate the clinical metadata columns (patient_id, bcr_patient_barcode, sample_type) into a distinct metadata data frame. Ensure the row names of this metadata data frame match the unique sample identifier.
+* Extract the gene columns into a distinct counts_matrix. 
+* Transpose the counts_matrix so that rows represent Genes and columns represent Samples.
+
+Step 2: Blind Data Profiling & Diagnostic Logic Gates
+Before applying any normalization, write a profiling script to inspect the mathematical properties of the matrix and programmatically determine how it has been transformed. Print the following metrics to the console:
+1. Column Sums: Calculate the total sum of counts per sample column.
+2. Max Value: Find the absolute maximum value across the entire matrix.
+3. Quantiles: Calculate the 75th percentile of non-zero genes for each sample.
+
+Use the following strict logic gates based on these metrics to choose the processing path:
+* GATE A (Log Scaled): If the maximum value in the matrix is less than 25, the data is already log-transformed. Stop execution and flag that raw count or linear scaling is required.
+* GATE B (TPM / CPM Scaled): If every single column sum equals exactly 1,000,000 (1e6), the data has been pre-normalized to Transcripts Per Million or Counts Per Million. Print a warning that DESeq2 cannot be used, and proceed using the 'limma-voom' pipeline.
+* GATE C (Upper-Quartile Scaled): If the column sums vary widely (e.g., tens of millions) but the 75th percentile of non-zero genes scales uniformly to an identical fixed number across all samples (e.g., exactly 1,000), the data has been Upper-Quartile normalized. Print this finding and proceed using the 'limma-voom' pipeline.
+* GATE D (Raw / Expected Counts): If the column sums vary widely, the maximum value is large, and the 75th percentile of non-zero genes varies dynamically across samples, the data represents unscaled counts. Proceed using the standard 'DESeq2' pipeline.
+
+Step 3: Implement Stringent Prevalence Filtering
+Apply a strict low-count expression filter to clean up the dataset before downstream normalization:
+* Retain only the genes that have an expression value of at least 15 in at least 200 samples.
+* Subset the filtered matrix to only contain these passing genes.
+
+Step 4: Framework Processing & Normalization
+Based on the discovery in Step 2, run the chosen pipeline block to generate temporary data structures for QC:
+
+IF THE DATA ROUTED TO LIMMA-VOOM (GATES B or C):
+* Initialize an edgeR DGEList object: dge <- DGEList(counts = filtered_matrix, samples = metadata)
+* Calculate normalization factors to correct residual compositional differences: dge <- calcNormFactors(dge, method = "TMM")
+* Temporary Matrix 1 (Linear): Extract linear scale counts by dividing the counts columns by the computed effective library sizes and scaling back to the average library size.
+* Temporary Matrix 2 (Log2 Scale): Transform using voom: v <- voom(dge, design = model.matrix(~sample_type, data = metadata), plot = FALSE). Extract continuous expression values via v$E.
+
+IF THE DATA ROUTED TO DESEQ2 (GATE D):
+* Initialize the DESeq2 object: dds <- DESeqDataSetFromMatrix(countData = round(filtered_matrix), colData = metadata, design = ~ sample_type)
+* Calculate sequencing depth normalization factors: dds <- estimateSizeFactors(dds)
+* Temporary Matrix 1 (Linear): Extract normalized counts using counts(dds, normalized = TRUE).
+* Temporary Matrix 2 (Log2 Scale): Stabilize variance using Variance Stabilizing Transformation: vsd <- vst(dds, blind = FALSE). Extract continuous expression values via assay(vsd).
+
+Step 5: PCA-Based Sample Outlier Detection (MAD |Z| >= 3) & Visualization
+Using the log2-stabilized expression values generated in Step 4, run a robust outlier screening and plotting step:
+* Run Principal Component Analysis (PCA) on the initial log2-stabilized matrix (using prcomp with centering, rows = samples).
+* Extract the coordinates for the first two components: PC1 and PC2.
+* For both PC1 and PC2 separately, calculate the robust Z-score for each sample using R's built-in mad() function: Z = (PC_i - median(PC_i)) / mad(PC_i).
+* Identify any samples where absolute robust Z-score is greater than or equal to 3 (|Z| >= 3) on either PC1 or PC2.
+* Print a clear console summary tracking how many outliers were detected and listing their sample IDs. 
+
+* Export a "before" PCA plot (e.g., using ggplot2) saved as "pca_before_outlier_removal.png". In this plot, color all standard samples in a neutral shade (e.g., grey or blue) and color the flagged outlier samples distinctly in red.
+* Programmatically remove these flagged outlier samples from both your metadata and the filtered count matrix.
+* Re-run the Step 4 normalization blocks using this clean, subset data to establish the final matrices.
+* Generate a second PCA plot using the final, clean, post-normalization matrix and save it as "pca_after_outlier_removal.png" to show the cleanly clustered biological cohort.
+
+Step 6: Output Export
+Save the final, cleaned, outlier-removed data arrays as CSV files:
+* Save the finalized linear matrix as "matrix_normalized_linear.csv".
+* Save the finalized log2-stabilized matrix as "matrix_normalized_log2_stabilized.csv".
+
+Provide the clean, fully commented R code that builds this adaptive diagnostic, QC, and visualization workflow.

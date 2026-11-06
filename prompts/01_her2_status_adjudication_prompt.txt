@@ -1,0 +1,92 @@
+TASK: Adjudicate HER2 Status in TCGA Breast RNA-Seq Clinical Data
+
+1. Goal
+Inspect the clinical table at data/brca_tcga_clinical_data, extract the core HER2 assay columns, and generate an adjudicated output table containing standard clinical HER2_status and modern ADC-era HER2_expression_subtype.
+(2023 ASCO/CAP HER2 Guideline Update: Title: Human Epidermal Growth Factor Receptor 2 Testing in Breast Cancer: ASCO–College of American Pathologists Guideline Update)
+
+2. Input Columns & Data Patterns
+Ensure the script processes the following columns:
+- Patient ID
+- Sample ID
+- IHC-HER2 (qualitative labels: Positive, Negative, Equivocal, Indeterminate, NA)
+- HER2 ihc score (values: 0, 1, 2, 3, NA)
+- HER2 fish status (values: Positive, Negative, NA, [Not Evaluated], etc.)
+
+3. Decision Logic & Precedence Hierarchy
+Implement deterministic row-level classification using the following precedence:
+
+Step A: Determine Primary IHC Call
+Prioritize discrete HER2 ihc score when present; fallback to IHC-HER2 qualitative label:
+- IHC Positive: HER2 ihc score == 3 OR (HER2 ihc score is NA and IHC-HER2 == "positive")
+- IHC Equivocal: HER2 ihc score == 2 OR (HER2 ihc score is NA and IHC-HER2 in ["equivocal", "indeterminate"])
+- IHC Negative (Score 1): HER2 ihc score == 1
+- IHC Negative (Score 0): HER2 ihc score == 0
+- IHC Negative (Unspecified score): HER2 ihc score is NA and IHC-HER2 == "negative"
+- IHC Missing: Both HER2 ihc score and IHC-HER2 are NA/uninformative.
+
+Step B: Adjudicate Against FISH Status
+
+1. If IHC Positive (3+ or qualitative Positive):
+- If FISH is explicitly Negative:
+  HER2_status = "Negative"
+  HER2_expression_subtype = "HER2-Low"
+  Set audit flag: discordant_flag = "IHC_pos_FISH_neg"
+- Otherwise (FISH is Positive, NA, or Not Done):
+  HER2_status = "Positive"
+  HER2_expression_subtype = "HER2-Positive"
+
+2. If IHC Equivocal (2+ or qualitative Equivocal):
+Reflex evaluation is required:
+- If FISH is Positive:
+  HER2_status = "Positive"
+  HER2_expression_subtype = "HER2-Positive"
+- If FISH is Negative:
+  HER2_status = "Negative"
+  HER2_expression_subtype = "HER2-Low"
+- If FISH is missing / NA / "[Not Evaluated]":
+  HER2_status = "Indeterminate"
+  HER2_expression_subtype = "Indeterminate"
+
+3. If IHC Negative (Score 1+):
+- If FISH is explicitly Positive (rare discordant amplification):
+  HER2_status = "Positive"
+  HER2_expression_subtype = "HER2-Positive"
+  Set audit flag: discordant_flag = "IHC1_FISH_pos"
+- Otherwise (FISH is Negative, NA, or Not Done):
+  HER2_status = "Negative"
+  HER2_expression_subtype = "HER2-Low"
+
+4. If IHC Negative (Score 0):
+- If FISH is explicitly Positive:
+  HER2_status = "Positive"
+  HER2_expression_subtype = "HER2-Positive"
+  Set audit flag: discordant_flag = "IHC0_FISH_pos"
+- Otherwise (FISH is Negative, NA, or Not Done):
+  HER2_status = "Negative"
+  HER2_expression_subtype = "HER2-Zero"
+
+5. If IHC Negative (Score NA):
+- If FISH is explicitly Positive:
+  HER2_status = "Positive"
+  HER2_expression_subtype = "HER2-Positive"
+- Otherwise:
+  HER2_status = "Negative"
+  HER2_expression_subtype = "HER2-Negative (Unknown Score)"
+
+6. If IHC is completely Missing / NA:
+Adjudicate solely based on FISH:
+- FISH Positive -> HER2_status = "Positive", HER2_expression_subtype = "HER2-Positive"
+- FISH Negative -> HER2_status = "Negative", HER2_expression_subtype = "HER2-Negative (Unknown IHC)"
+- FISH missing / NA -> HER2_status = "Indeterminate", HER2_expression_subtype = "Indeterminate"
+
+4. Implementation Requirements
+1. Script: Create src/adjudicate_her2.py using pandas. Make it executable via CLI.
+2. Schema Handling: Automatically inspect separators (comma vs. tab) and header names to handle whitespace variations in column titles gracefully.
+3. Output File: Write results to results/brca_her2_status_adjudicated.tsv containing the original columns plus:
+- HER2_status
+- HER2_expression_subtype
+- discordant_flag
+4. Execution & Verification:
+- Execute the script directly in the environment.
+- Print contingency tables / value counts for HER2_status and HER2_expression_subtype.
+- Print any identified discordant rows (discordant_flag.notna()) to standard out for quality control inspection.

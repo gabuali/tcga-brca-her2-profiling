@@ -1,0 +1,174 @@
+# ==============================================================================
+# DETAILED EXECUTION PROMPT: CLIENT-QUALITY TECHNICAL REPORTS GENERATION
+# TCGA-BRCA HER2 MULTIMODAL PROFILING, QUALITY CONTROL & RESCUE PIPELINE
+# ==============================================================================
+
+You are an expert bioinformatics and translational oncology communications specialist. 
+Your objective is to compile two publication-grade, client-ready technical reports documenting the end-to-end TCGA-BRCA HER2 profiling, quality control, machine learning classification, and patient rescue pipeline.
+
+### Deliverable Architecture & Requirements:
+1. Two Standalone Reports:
+   - Report 1: TCGA-BRCA HER2 Quality Control, Clinical Adjudication & RNA-Seq Preprocessing Technical Report
+   - Report 2: TCGA-BRCA Multimodal Purity- & Amplicon-Aware HER2 Classification & Patient Rescue Technical Report
+2. Delivery Formats (6 files total in `results/reports/` and synced to the Artifact Directory):
+   - Markdown (`.md`): Clean, GitHub-flavored markdown with embedded tables and relative figure paths.
+   - HTML (`.html`): Self-contained, portable single-file executive documents with embedded modern CSS (typography, responsive container, colored callout badges, styled tables) and base64-encoded PNG figures (no external image dependencies; opens cleanly in any browser or email client).
+   - PDF (`.pdf`): Publication-grade PDF documents compiled via `pandoc` using `xelatex` with 1-inch margins, high-res figure scaling, and formatted multi-page tables.
+3. Uniform 5-Part Section Architecture for every chronological step:
+   - Part 1: Objective & Clinical/Biological Rationale
+   - Part 2: Input Datasets & Executable Script/Parameters
+   - Part 3: Methodological Decision Points & Justification
+   - Part 4: Quantitative Results (Embedded Plots, Key Metrics & Summary Tables)
+   - Part 5: Actionable Biological Takeaways & Output Files Cataloged
+4. Deliverable Packaging & Top-Level Documentation:
+   - Package all components into a clean deliverable folder structure.
+   - Provide a concise plain-text top-level `README.txt` containing the executive summary, navigation directory, key findings, and pipeline reproduction commands.
+
+---
+
+## REPORT 1: QC, ADJUDICATION & RNA-SEQ PREPROCESSING REPORT
+Target Files: `results/reports/QC_Report.{md,html,pdf}`
+
+### Section 1: Executive Summary & Cohort Reconciliation
+- Context: Tempus Pharma R&D Coding Challenge objective for TCGA-BRCA HER2 profiling.
+- Master Cohort Flow Table: Step-by-step reconciliation from 1,108 clinical records and 1,212 RNA-seq samples down to the clean 1,193-sample post-QC cohort (1,075 Primary Tumors, 111 Normal Adjacent, 7 Metastasis), explaining the exact 33-sample exclusion delta:
+  1. 18 Primary Tumor PCA Outliers (removed during RNA-seq technical QC)
+  2. 7 Metastasis Samples (held for Step 7 discovery controls)
+  3. 8 Clinical records lacking RNA-seq data in `data/tcga.brca.rsem.csv`
+
+### Section 2: Clinical HER2 Status Derivation & Discordance Adjudication
+- Script: `src/adjudicate_her2.py`
+- Inputs: `data/brca_tcga_clinical_data.csv` (N = 1,108).
+- Methodology: 2-step hierarchical cascade:
+  * Step A: Discrete numerical IHC score (0, 1, 2, 3) precedence over qualitative text labels.
+  * Step B: Reflex FISH adjudication for equivocal (2+) or missing IHC.
+  * Discordance audit: Identifying and flagging conflicts between IHC and FISH.
+- Results & Tables:
+  * Master Contingency Table: Negative (786, 70.9%), Positive (172, 15.5%), Indeterminate (150, 13.5%).
+  * Discordance Summary Table: 42 flagged discordant cases broken down by pattern (e.g., IHC 1+ but FISH Pos, IHC 3+ but FISH Neg).
+  * Data Completeness Table: Breakdown by IHC and FISH availability.
+- Outputs Referenced: `results/her2_clinical_status.csv`, `results/brca_her2_status_adjudicated.tsv`, `results/her2_adjudication_summary.xlsx` (Sheets: `1_Contingency_Table`, `2_Discordant_Summary_and_Rows`, `3_Data_Completeness_Breakdown`).
+
+### Section 3: RNA-Seq Diagnostic Profiling & Gate C Routing
+- Script: `src/normalize_rnaseq.R`
+- Inputs: `data/tcga.brca.rsem.csv` (1,212 samples x 20,502 genes).
+- Methodology & Diagnostic Gates:
+  * Gate A: Max matrix value = 2,066,039.16 (linear count space).
+  * Gate B: Sample column sums = 16.1M to 36.3M (unnormalized library sizes).
+  * Gate C: 75th percentile of non-zero genes scaled uniformly to ~1,000 (999.17 to 1,003.09, CV = 0.0456%), confirming TCGA Level 3 Upper-Quartile normalized RSEM.
+- Decision Point: Rationale for routing to `edgeR` (TMM scale factors) + `limma-voom` variance stabilization rather than `DESeq2`.
+- Prevalence Filter: Retaining counts >= 15 in >= 200 samples preserves 15,632 / 20,502 genes (76.2%), retaining ERBB2 and all 17q12 amplicon genes.
+
+### Section 4: PCA Outlier Screening, Outlier Removal & Cohort Re-Normalization
+- Script: `src/normalize_rnaseq.R`
+- Methodology: Principal Component Analysis with unit-variance scaling (`scale. = TRUE`).
+  * Critical Decision Point: Explaining why unit-variance scaling was essential to prevent hyper-variable lineage genes like `ESR1` (which correlates r = 0.80 with unscaled PC2) from falsely flagging 145 ER-negative/Basal-like tumors as outliers.
+- Outlier Identification: Robust MAD threshold (`|Z_PC1| >= 3` or `|Z_PC2| >= 3`) flagged 19 extreme technical outliers (18 Primary Tumors, 1 Adjacent Normal).
+- Embedded Figures:
+  * Figure 1A: `pca_before_outlier_removal.png` (PCA showing 19 extreme outliers in red).
+  * Figure 1B: `pca_after_outlier_removal.png` (PCA showing clean, balanced 1,193-sample distribution).
+- Re-normalization Results: Clean 1,193-sample cohort (1,075 Primary Tumor, 111 Adjacent Normal, 7 Metastasis).
+- Outputs Referenced: `results/pca_outliers_removed.csv`, `results/rsem_sample_metadata.csv`, `results/matrix_normalized_linear.csv`, `results/matrix_normalized_log2_stabilized.csv`.
+
+---
+
+## REPORT 2: MULTIMODAL CLASSIFICATION & PATIENT RESCUE REPORT
+Target Files: `results/reports/Classification_Report.{md,html,pdf}`
+
+### Section 1: Executive Summary & Multimodal Framework Architecture
+- Problem Statement: Single-assay HER2 discordance and clinical indeterminacy in breast cancer.
+- Methodological Solution: Integrating continuous RNA expression, discrete copy number (GISTIC), ESTIMATE tumor purity, and 17q12 amplicon co-expression in a cost-sensitive machine learning framework.
+- Master Results Dashboard: High-level table of key performance metrics, rescue statistics (16 patients rescued: 12 Tier 1, 4 Tier 2), and metastasis generalization (100% concordance).
+
+### Section 2: Distribution Analysis & Tissue Baseline Controls (Plot 1)
+- Script: `src/her2_pipeline_milestone1.py`
+- Cohort Definition (Option B): Complete-case Primary Tumors (RNA + GISTIC) vs. Tissue Controls (Normal Adjacent n = 111, Metastasis n = 7).
+- Embedded Figure: Plot 1 (`plot1_complete_cases_kde.png`).
+- Findings & Medians Table:
+  * HER2 Positive (n = 149, Median = 11.13 log2-CPM)
+  * HER2 Negative (n = 680, Median = 8.36 log2-CPM)
+  * HER2 Indeterminate (n = 123, Median = 8.58 log2-CPM)
+  * Normal Adjacent (n = 111, Median = 7.88 log2-CPM)
+  * Metastasis controls (n = 7, rug ticks: range 6.27 to 10.50 log2-CPM)
+- Decision Point: Permanent filtering dropping 111 Normal Adjacent and 7 Metastasis samples, establishing the 1,075 Primary Tumor cohort.
+
+### Section 3: Continuous ERBB2 RNA-Seq ROC Analysis (Plot 2)
+- Script: `src/her2_pipeline_milestone1.py`
+- Cohort: Labeled complete cases (n = 829: 149 Pos, 680 Neg).
+- Embedded Figure: Plot 2 (`plot2_rnaseq_roc.png`).
+- Results: AUC = 0.8317, Youden's J optimal cutoff = 9.5569 log2-CPM (J = 0.6254).
+- Metrics Table: Full 10-metric tabulation (Sensitivity 65.8%, Specificity 96.8%, Precision 81.7%, NPV 92.8%, Balanced Accuracy 81.3%, F1 0.7286).
+
+### Section 4: ESTIMATE Tumor Purity & Microenvironment Deconvolution (Plot 3)
+- Script: `src/her2_pipeline_milestone1.py`
+- Methodology: ssGSEA on 141-gene Stromal and 141-gene Immune signatures, scaled to Yoshihara Affymetrix baseline, and converted via the ESTIMATE cosine formula.
+- Cohort Summary: Mean purity = 0.8011 (range 0.3183 to 1.0000).
+- Embedded Figure: Plot 3 (`plot3_purity_vs_erbb2.png`).
+- Summary Tables:
+  * Top 5 Highest and Lowest Purity Primary Tumors Table.
+  * Purity Dichotomy Table: Showing statistically significant stromal dilution in HER2-negative tumors (+0.24 log2-CPM, p = 1.55e-4) and Indeterminates (+0.47 log2-CPM, p = 0.022).
+
+### Section 5: 17q12 Core Amplicon Co-Expression & Amplicon_Z Score (Plot 4)
+- Script: `src/her2_pipeline_milestone1.py`
+- Embedded Figure: Plot 4 (`plot4_amplicon_clustermap.png`).
+- Findings: Pearson r = 0.760 to 0.893 across ERBB2, GRB7, PGAP3, STARD3, and MIEN1 (C17orf37).
+- Derivation: Formula for Amplicon_Z = mean gene-wise Z-score of flanking 4 genes across all 1,075 primary tumors.
+
+### Section 6: Discrete GISTIC CNV ROC & Paired DeLong's Statistical Test (Plots 5 & 6)
+- Script: `src/her2_pipeline_milestone1.py`
+- Embedded Figures:
+  * Plot 5 (`plot5_gistic_roc.png`): Discrete GISTIC ROC curve at focal amplification cutoff (== 2).
+  * Plot 6 (`plot6_combined_roc.png`): Head-to-head ROC curve overlay with DeLong test box.
+- Head-to-Head 10-Metric Comparative Table (RNA vs. GISTIC on identical n = 829 complete cases).
+- Paired DeLong Test Statistics: RNA AUC = 0.8317, GISTIC AUC = 0.8139, Delta AUC = +0.0178, Z = +1.4038, p = 0.1604 (not significant).
+
+### Section 7: [Clinical Deep-Dive Spotlight 1] — Statistical Parity vs. Multivariate Amplicon Dominance
+- Analytical Resolution of the Apparent Paradox:
+  * Why univariate DeLong shows statistical parity (p = 0.1604).
+  * Why multivariate Random Forest shifts weight to RNA (38.6%) and Amplicon_Z (32.0%), cannibalizing GISTIC (12.3%).
+  * Continuous cardinality / Gini MDI bias vs. discrete 5-level integer bins.
+  * Amplicon_Z as a transcriptional proxy for copy number amplification.
+  * The GISTIC +1 dilemma: Capturing low-level copy gain overexpressors.
+
+### Section 8: Multimodal Purity- and Amplicon-Aware Machine Learning Modeling (Step 6 & Plot 7)
+- Script: `src/her2_pipeline_milestone2.py`
+- Validation Scheme: 5-Fold Stratified Cross-Validation on n = 829 complete cases (1 : 4.56 class ratio).
+- Cost-Sensitive Training: `class_weight='balanced'` in Logistic Regression and Random Forest (500 trees).
+- Sub-Section: Why Probability Threshold Shifting is Required (The Problem):
+  * Mathematical explanation: Severe minority penalty (4.56x) inflates output probabilities near decision boundary.
+  * Result of naive 0.50 cutoff: Excess false positives (60 in LR, 6 in RF).
+  * The solution: Out-of-fold Youden's J optimization re-calibrates the decision threshold to empirical optimum (0.6240 for LR, 0.5880 for RF).
+- Full OOF Comparative Metrics Table (Default 0.50 vs. Shifted Youden for LR and RF).
+- Embedded Figure: Plot 7 (`plot7_rf_feature_importance.png`).
+  * Feature weights: ERBB2_RNA (38.57%), Amplicon_Z (31.95%), Tumor_Purity (17.16%), ERBB2_GISTIC (12.32%).
+  * Highlight: Amplicon_Z + Purity account for 49.11% of model decision weight.
+
+### Section 9: [Clinical Deep-Dive Spotlight 2] — Model Selection Rationale: Why Random Forest Anchors Rescue
+- Comparative Metrics Analysis:
+  * Precision: RF 96.70% (3 FPs out of 680) vs. LR 89.52% (11 FPs).
+  * Specificity: RF 99.56% vs. LR 98.38%.
+  * Clinical Safety: Preventing toxic anti-HER2 therapy administration to true negatives.
+  * Non-Linear Feature Interactions: How decision trees capture step-function thresholds (e.g., GISTIC == 2 + Purity > 0.70; or GISTIC < 2 + Amplicon_Z > 1.5 in low-purity tumors).
+  * Transparent Deployment Strategy: Using RF as primary tier anchor while reporting LR side-by-side.
+
+### Section 10: Indeterminate Primary Tumor Rescue & Metastasis Generalization (Step 7 & Plot 8)
+- Script: `src/her2_pipeline_step7.py`
+- Rescued Cohort: 123 complete Indeterminate primary tumors.
+- Tier Definitions & Counts:
+  * Tier 1 (High-Confidence Rescue, RF Prob >= 0.70): n = 12 (9.8%)
+  * Tier 2 (Moderate-Confidence Rescue, 0.5880 <= RF Prob < 0.70): n = 4 (3.3%)
+  * Tier 3 (Negative / Discard, RF Prob < 0.5880): n = 107 (87.0%)
+- Complete Rescued Patients Table: Full multi-omic profile of all 16 rescued cases (Tiers 1 & 2) with Sample ID, RNA, GISTIC, Purity, Amplicon_Z, RF probability, and LR probability.
+- Embedded Figure: Plot 8 (`plot8_rescue_facet_plot.png`) — 3-panel facet plot (Purity, Amplicon_Z, GISTIC vs. RNA colored by Tier).
+- Bonus Discovery: Evaluation of 7 Excluded Metastasis Control Samples:
+  * 7-row table showing primary-tumor model predictions on metastatic tissue.
+  * Key Finding: 100% concordance with primary tumor clinical diagnosis (1 Positive `TCGA-E2-A15E-06` with RF Prob = 0.992; 6 Negatives).
+
+### Section 11: Master Excel Architecture, Prompts Catalog & Deliverables Summary
+- Master Workbook Documentation: Detailing the contents and schema of all 9 sheets in `results/her2_classification_results.xlsx`.
+- Workflow Prompts Catalog:
+  * `src/her2_status_prompt.txt`: Pathology guidelines for IHC score precedence and reflex FISH.
+  * `src/QC_agent_prompt.txt`: Diagnostic gate checks, TMM-voom selection, and unit-variance PCA outlier screening.
+  * `src/her2_classification_agent_prompt.txt`: The 7-step multimodal classification, Youden threshold shifting, and rescue tiering.
+- Reproducibility & Code Catalog: Summary of scripts and pickled bundles (`milestone1_bundle.pkl`, `production_models.pkl`, `step7_bundle.pkl`).
+

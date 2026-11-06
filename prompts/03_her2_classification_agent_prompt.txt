@@ -1,0 +1,68 @@
+You are an expert bioinformatics agent. Execute the following 7-step pipeline to classify HER2 status using a purity-aware machine learning framework.
+
+### CRITICAL PLATFORM & DATA CONSTRAINTS:
+1. SAMPLE EXTRACTION & COHORT SPLITTING:
+   - Use BOTH Primary Tumors and Normal Adjacent/Metastasis samples in Step 0/1 (Plot 1) as visual baseline controls.
+   - Immediately after Plot 1, permanently drop all Normal Adjacent and Metastasis samples. Proceed downstream using ONLY Primary Tumor samples.
+   - Separate your Primary Tumors into two operational cohorts: Labeled Training Cases (samples with known clinical HER2 status AND complete GISTIC data) and Rescue Cases (the Indeterminate samples, plus samples missing GISTIC data). 
+2. DATA INPUTS & FORMAT: The input RNA-seq matrix consists of pre-computed edgeR/limma-voom TMM-normalized log2-Counts Per Million (log2-CPM). Skip any further transformation.
+3. THREE-FEATURE MODEL SPACE: 'Tumor_Purity' must be calculated and included as the third training feature column alongside ERBB2_RNA and ERBB2_GISTIC.
+4. STOPPING POINTS & VISUALIZATION: Do not generate the entire pipeline at once. Stop at each milestone, render the specified figures using matplotlib/seaborn, and wait for confirmation.
+5. INPUT FILES: results/her2_clinical_status.csv, results/matrix_normalized_log2_stabilized.csv, data/brca_tcga_erbb2_copy_number.csv
+
+---
+
+### STEP 1 & 2: DISTRIBUTION & RNA-SEQ ROC ANALYSIS
+- Extract the ERBB2 expression row.
+- PLOT 1: Render a Kernel Density Estimate (KDE) plot of ERBB2 expression stratified into three groups: Clinical HER2 Positive, Clinical HER2 Negative, Clinical HER2 Indeterminate, and Normal Adjacent tissue.
+- **FILTER COHORT:** Drop all Normal Adjacent and Metastasis samples.
+- Perform ROC Curve analysis using the HER2_status labels against continuous ERBB2 log2-CPM values, using Labeled Training Cases data.
+- Performance metrics: Calculate Youden's J optimal threshold, Sensitivity, Specificity, Precision / Positive Predictive Value (PPV), Negative Predictive Value (NPV), False Positive Rate (FPR) / Fall-out, False Negative Rate (FNR) / Miss Rate, Accuracy, Balanced Accuracy (robust against class imbalance), and F1 score.  Save tabulated Performance metrics to excel file.
+- PLOT 2: Render the RNA-seq ROC Curve displaying the AUC, Youden's J optimal threshold, and relevant metrics.
+
+### STEP 3: PYTHON-BASED ESTIMATE TUMOR PURITY
+- Compute the Stromal and Immune scores across all primary tumor samples using the log2-CPM matrix and the official ESTIMATE signatures via single-sample GSEA (gseapy).
+- Derive the final continuous Tumor Purity Score (0 to 1) for every sample using the validated ESTIMATE cosine formula, save to excel file.
+- PLOT 3: Render a Scatter Plot showing Tumor Purity (X-axis) vs. ERBB2 Expression (Y-axis), color-coded by the Clinical HER2 status, with linear trendline.
+
+### STEP 4: AMPLICON CO-EXPRESSION
+- Isolate the expression profiles of the core amplicon genes: ERBB2, GRB7, PGAP3, MIEN1, and STARD3.
+- PLOT 4: For Labeled Training Cases data, Render a clustered correlation heatmap of these 5 genes across the cohort to visually confirm the block-amplification signature.
+- Compute across all primary tumor samples a Mean Gene-Wise Z-Score for the four genes: Amplicon_Z = (Z_GRB7 + Z_PGAP3 + Z_STARD3 + Z_MIEN1) / 4 and save to excel file.  
+
+### STEP 5: GISTIC CNV ROC ANALYSIS
+- Perform ROC Curve analysis using the HER2_status labels against discrete GISTIC erbb2_copy_number data in brca_tcga_erbb2_copy_number.csv, on Labeled Training Cases data.
+- Performance metrics: Sensitivity, Specificity, Precision / Positive Predictive Value (PPV), Negative Predictive Value (NPV), False Positive Rate (FPR) / Fall-out, False Negative Rate (FNR) / Miss Rate, Accuracy, Balanced Accuracy (robust against class imbalance), and F1 score.  Save tabulated Performance metrics to excel file.
+- PLOT 5: Render the GISTIC ROC Curve displaying the AUC and relevant metrics.
+- Run DeLong's paired test to statistically compare the AUC of your continuous RNA-seq model against this discrete, GISTIC model on the exact same complete cases. Print the Z-score and p-value and save to file.
+- PLOT 6: Render combined ROC Curve for RNA ERBB2 log2-CPM values and GISTIC CNV data, with relevant metrics in plot.
+
+🛑 STOPPING POINT 1: Present Plots 1-6, alongside the RNA-seq and CNV ROC metrics, the DeLong test p-value, and a summary table of the top 5 highest and lowest purity samples. Verify that Normal Adjacent and Metastasis samples were removed and only Labeled Training Cases data was used in ROC analysis. Wait for confirmation.
+
+---
+
+### STEP 6: PURITY-AWARE ML MODELING WITH CLASS IMBALANCE
+- From Labeled Training Cases data, isolate the complete-case tumors samples with explicit GISTIC data and Positive/Negative HER2 labels. Form the final feature matrix: [ERBB2_RNA, ERBB2_GISTIC, Tumor_Purity, Amplicon_Z].
+- Set up a 5-Fold Stratified Cross-Validation loop to preserve the class imbalance across splits.
+- Train two models inside the loop, enforcing cost-sensitive learning to handle imbalance without downsampling:
+  1. Logistic Regression (class_weight='balanced')
+  2. Random Forest Classifier (500 trees, class_weight='balanced')
+- Execute Probability Threshold Shifting: Collect out-of-fold probabilities, calculate the ROC curve, and extract the custom optimal probability threshold using Youden's J.
+- PLOT 7: Render the Random Forest feature importance bar chart showing the relative weights of RNA, GISTIC, Tumor Purity, and Amplicon_Z.
+- Print the out-of-fold classification metrics (Precision, Recall, F1 per class) using the shifted threshold. Train the final production models on 100% of the complete-case dataset.
+- Save performance metrics, OOF probabilities, relevant results to excel file.
+
+🛑 STOPPING POINT 2: Present the final Cross-Validation summary table, Plot 7 (Feature Importance), and the calculated optimal probability threshold. Wait for confirmation to rescue.
+
+---
+
+### STEP 7: PREDICTION, RECOVERY TIERING, AND METASTASIS INSPECTION
+- Compile Rescue Cases with complete data (the Indeterminate samples).
+- Predict raw probabilities using your final trained models via `.predict_proba(X_rescue)[:, 1]`.
+- Categorize the rescued samples into three strict confidence tiers:
+  Tier 1: High-Confidence Rescue (Prob >= 0.70)
+  Tier 2: Moderate-Confidence Rescue (Optimal Threshold <= Prob < 0.70)
+  Tier 3: Negative / Discard (Prob < Optimal Threshold)
+- PLOT 8 (Informative): Render a final 3D Scatter Plot or a paired Facet Plot of the rescued samples using axes for RNA, GISTIC, Purity, Amplicon_Z colored by their new Tier Assignment.
+- **BONUS DISCOVERY STEP:** Pass the 7 excluded Metastasis samples through this pipeline. Predict their probabilities and print an independent 7-row table showing how the primary-tumor model classifies them.
+- Export the final rescued matrix as a clean excel file.

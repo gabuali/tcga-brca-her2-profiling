@@ -149,7 +149,7 @@ Multimodal Input Vector:
 │   ├── 02_qc_agent_prompt.txt                   # Phase 2: RNA-seq diagnostic gates & PCA QC prompt
 │   ├── 03_her2_classification_agent_prompt.txt  # Phase 3: Multimodal ML classification prompt
 │   ├── 04a_user_reports_request.txt             # Phase 4 User Directive: Strategic reporting prompt
-│   └── 04b_client_reports_generation_prompt.txt # Phase 4 Technical Prompt: Technical specification
+│   └── 04b_technical_reports_generation_prompt.txt # Phase 4 Technical Prompt: Technical specification
 ├── src/                                      # Modular pipeline source code
 │   ├── adjudicate_her2.py                    # Phase 1: Clinical adjudication & discordance auditing
 │   ├── normalize_rnaseq.R                    # Phase 2: Diagnostic profiling, TMM-voom & PCA screening
@@ -157,7 +157,7 @@ Multimodal Input Vector:
 │   ├── her2_pipeline_milestone2.py           # Phase 3B: Milestone 2 (5-Fold CV, RF/LR threshold shifting)
 │   ├── her2_unsupervised_subsets.py          # Phase 3C: Milestone 3 (PAM50 intrinsic clustering, Plots 9 & 10)
 │   ├── her2_pipeline_step7.py                # Phase 3D: Milestone 4/5 (Prioritization, Plot 8, metastasis)
-│   └── compile_client_reports.py             # Phase 4: Standalone HTML/MD technical report compiler
+│   └── compile_reports.py                    # Phase 4: Standalone HTML/MD technical report compiler
 └── results/                                  # Quantitative outputs, models, workbooks & figures
     ├── her2_classification_results.xlsx      # Master 11-sheet audited Excel classification workbook
     ├── her2_adjudication_summary.xlsx        # 3-sheet clinical contingency and discordance workbook
@@ -187,7 +187,7 @@ Multimodal Input Vector:
 
 ## Reproduction & Pipeline Execution
 
-To execute the complete pipeline from data processing to client report compilation, run the following sequential commands:
+To execute the complete pipeline from data processing to technical report compilation, run the following sequential commands:
 
 ```bash
 # Step 1: Clinical Adjudication & Discordance Auditing
@@ -209,8 +209,8 @@ python3 src/her2_unsupervised_subsets.py
 # Step 6: Step 7 Analysis (Indeterminate Prioritization, Plot 8, Metastasis)
 python3 src/her2_pipeline_step7.py
 
-# Step 7: Compile Standalone Client Technical Reports (HTML & Markdown)
-python3 src/compile_client_reports.py
+# Step 7: Compile Standalone Technical Reports (HTML & Markdown)
+python3 src/compile_reports.py
 ```
 
 ---

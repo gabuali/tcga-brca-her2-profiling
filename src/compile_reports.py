@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 ================================================================================
-TCGA-BRCA HER2 PROFILING: CLIENT-QUALITY TECHNICAL REPORT COMPILER
+TCGA-BRCA HER2 PROFILING: TECHNICAL REPORT COMPILER
 ================================================================================
 Compiles standalone publication-grade technical reports in Markdown, HTML 
 (responsive sidebar layout, zero-overflow effective-html standard), and PDF (via xelatex).
@@ -1145,8 +1145,8 @@ prompts/
 ├── 01_her2_status_adjudication_prompt.txt   # Phase 1: Pathology precedence rules & discordant flag logic
 ├── 02_qc_agent_prompt.txt                   # Phase 2: Diagnostic profiling, TMM-voom selection & PCA outlier screening
 ├── 03_her2_classification_agent_prompt.txt  # Phase 3: 7-step multimodal ML, Youden shifting & prioritization
-├── 04a_user_reports_request.txt             # Phase 4 User Directive: Strategic client prompt initiating reports & /grill-me
-└── 04b_client_reports_generation_prompt.txt # Phase 4 Technical Prompt: Technical specification derived from 04a
+├── 04a_user_reports_request.txt             # Phase 4 User Directive: Strategic user prompt initiating reports & /grill-me
+└── 04b_technical_reports_generation_prompt.txt # Phase 4 Technical Prompt: Technical specification derived from 04a
 ```
 
 | Source Code Script | Primary Functionality | Input Dependencies | Primary Output Deliverables |
@@ -1157,7 +1157,7 @@ prompts/
 | `src/her2_pipeline_milestone2.py`| Milestone 2 (5-Fold CV, Plot 7) | `results/milestone1_bundle.pkl` | `results/production_models.pkl` |
 | `src/her2_unsupervised_subsets.py`| Milestone 3 (PAM50 Subsetting) | `data/tcga.brca.rsem.csv.gz` | `results/plot9_unsupervised_pca_subtypes.png`<br>`results/plot10_subtype_marker_heatmap.png`<br>`results/unsupervised_bundle.pkl` |
 | `src/her2_pipeline_step7.py` | Milestone 4/5 (Indeterminates & Meta) | Milestone bundles & models | `results/step7_bundle.pkl`<br>`results/her2_classification_results.xlsx` |
-| `src/compile_client_reports.py` | Standalone report compiler | All plots & results tables | `reports/QC_Report.{md,html}`<br>`reports/Classification_Report.{md,html}` |
+| `src/compile_reports.py` | Standalone report compiler | All plots & results tables | `reports/QC_Report.{md,html}`<br>`reports/Classification_Report.{md,html}` |
 
 ---
 

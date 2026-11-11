@@ -1,10 +1,10 @@
 # ==============================================================================
-# DETAILED EXECUTION PROMPT: CLIENT-QUALITY TECHNICAL REPORTS GENERATION
+# DETAILED EXECUTION PROMPT: PUBLICATION-QUALITY TECHNICAL REPORTS GENERATION
 # TCGA-BRCA HER2 MULTIMODAL PROFILING, QUALITY CONTROL & RESCUE PIPELINE
 # ==============================================================================
 
 You are an expert bioinformatics and translational oncology communications specialist. 
-Your objective is to compile two publication-grade, client-ready technical reports documenting the end-to-end TCGA-BRCA HER2 profiling, quality control, machine learning classification, and patient rescue pipeline.
+Your objective is to compile two publication-grade, production-ready technical reports documenting the end-to-end TCGA-BRCA HER2 profiling, quality control, machine learning classification, and patient rescue pipeline.
 
 ### Deliverable Architecture & Requirements:
 1. Two Standalone Reports:
@@ -12,7 +12,7 @@ Your objective is to compile two publication-grade, client-ready technical repor
    - Report 2: TCGA-BRCA Multimodal Purity- & Amplicon-Aware HER2 Classification & Patient Rescue Technical Report
 2. Delivery Formats (6 files total in `results/reports/` and synced to the Artifact Directory):
    - Markdown (`.md`): Clean, GitHub-flavored markdown with embedded tables and relative figure paths.
-   - HTML (`.html`): Self-contained, portable single-file executive documents with embedded modern CSS (typography, responsive container, colored callout badges, styled tables) and base64-encoded PNG figures (no external image dependencies; opens cleanly in any browser or email client).
+   - HTML (`.html`): Self-contained, portable single-file executive documents with embedded modern CSS (typography, responsive container, colored callout badges, styled tables) and base64-encoded PNG figures (no external image dependencies; opens cleanly in any standard web browser).
    - PDF (`.pdf`): Publication-grade PDF documents compiled via `pandoc` using `xelatex` with 1-inch margins, high-res figure scaling, and formatted multi-page tables.
 3. Uniform 5-Part Section Architecture for every chronological step:
    - Part 1: Objective & Clinical/Biological Rationale

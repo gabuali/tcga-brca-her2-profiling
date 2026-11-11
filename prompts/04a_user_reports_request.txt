@@ -1,16 +1,16 @@
 ================================================================================
-PHASE 4: USER STRATEGIC DIRECTIVE FOR CLIENT REPORT GENERATION
+PHASE 4: USER STRATEGIC DIRECTIVE FOR TECHNICAL REPORT GENERATION
 ================================================================================
-Context: High-level user/client directive issued following completion of data 
-analysis. This directive instructed the agent to plan and draft client-quality 
+Context: High-level user directive issued following completion of data 
+analysis. This directive instructed the agent to plan and draft publication-quality 
 reports in HTML, PDF, and Markdown format, and initiated the /grill-me alignment 
 interview. 
 
 Note on Prompt Lineage:
-- This file (04a) represents the strategic client directive specifically 
+- This file (04a) represents the strategic user directive specifically 
   initiating Phase 4 (Report Generation).
 - It directly yielded the comprehensive technical execution specification in 
-  '04b_client_reports_generation_prompt.txt'.
+  '04b_technical_reports_generation_prompt.txt'.
 - The earlier prompt files in this directory (01, 02, and 03) are the operational 
   execution prompts that governed Phases 1 through 3 (Clinical Adjudication, 
   RNA-Seq Diagnostic QC & Normalization, and Multimodal ML Classification).
@@ -18,7 +18,7 @@ Note on Prompt Lineage:
 
 [User Initiating Prompt Text]:
 
-/plan Now that the analysis is done, you will compile client-quality reports in HTML, PDF, and markdown format.  Ideally two reports, one for QC and one for the classification pipeline:
+/plan Now that the analysis is done, you will compile publication-quality reports in HTML, PDF, and markdown format.  Ideally two reports, one for QC and one for the classification pipeline:
 - Both reports need to follow chronological steps, report actionable insight with plots and summary tables.
 - QC report - contains concise text on what and why was each step done, referencing prompt, code, and output files/figures in chronological order.  What each script does, what was input, what was output and what output file contains.
 - Classification report - contains concise text on what and why was each step done, what were the decision points, referencing prompt, code, and output files/figures in chronological order.  What each script does, what was input, what was output and what output file contains.  Results need to have plots and summary tables, referencing full tables in files, takeaway points with biological context.  Sections defined around comparing RNA and DNA predictive potential, classification with ML (RF and LR), rescue of Indeterminate samples.  

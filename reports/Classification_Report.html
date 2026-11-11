@@ -2320,8 +2320,8 @@ archived:</p>
 ├── 01_her2_status_adjudication_prompt.txt   # Phase 1: Pathology precedence rules &amp; discordant flag logic
 ├── 02_qc_agent_prompt.txt                   # Phase 2: Diagnostic profiling, TMM-voom selection &amp; PCA outlier screening
 ├── 03_her2_classification_agent_prompt.txt  # Phase 3: 7-step multimodal ML, Youden shifting &amp; prioritization
-├── 04a_user_reports_request.txt             # Phase 4 User Directive: Strategic client prompt initiating reports &amp; /grill-me
-└── 04b_client_reports_generation_prompt.txt # Phase 4 Technical Prompt: Technical specification derived from 04a</code></pre>
+├── 04a_user_reports_request.txt             # Phase 4 User Directive: Strategic user prompt initiating reports &amp; /grill-me
+└── 04b_technical_reports_generation_prompt.txt # Phase 4 Technical Prompt: Technical specification derived from 04a</code></pre>
 <div class="table-wrap"><table>
 <colgroup>
 <col style="width: 25%" />
@@ -2376,7 +2376,7 @@ Meta)</td>
 <td style="text-align: left;"><code>results/step7_bundle.pkl</code><br><code>results/her2_classification_results.xlsx</code></td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>src/compile_client_reports.py</code></td>
+<td style="text-align: left;"><code>src/compile_reports.py</code></td>
 <td style="text-align: left;">Standalone report compiler</td>
 <td style="text-align: left;">All plots &amp; results tables</td>
 <td style="text-align: left;"><code>reports/QC_Report.{md,html}</code><br><code>reports/Classification_Report.{md,html}</code></td>

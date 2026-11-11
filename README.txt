@@ -3,9 +3,9 @@ TEMPUS PHARMA R&D CODING CHALLENGE: TCGA-BRCA HER2 MULTIMODAL PROFILING
 ================================================================================
 Project:       TCGA-BRCA Multimodal HER2 Status Classification, Quality Control
                & Machine Learning Pipeline
-Version:       1.0 (Final Approved Client Release)
+Version:       1.0 (Final Approved Release)
 Date:          November 2026
-Documentation: Client-Quality Technical Reports in HTML and Markdown format
+Documentation: Publication-Grade Technical Reports in HTML and Markdown format
 
 ================================================================================
 1. EXECUTIVE SUMMARY & CLINICAL IMPACT
@@ -64,7 +64,7 @@ directory layout:
 
 .
 ├── README.txt                                <-- This project guide & executive summary
-├── reports/                                  <-- Publication-grade standalone client deliverables
+├── reports/                                  <-- Publication-grade standalone deliverables
 │   ├── QC_Report.html                        <-- Responsive self-contained HTML (effective-html standard)
 │   ├── QC_Report.md                          <-- Standard GitHub-flavored Markdown report
 │   ├── Classification_Report.html            <-- Responsive self-contained HTML (effective-html standard)
@@ -73,8 +73,8 @@ directory layout:
 │   ├── 01_her2_status_adjudication_prompt.txt   # Phase 1: Clinical IHC/FISH adjudication prompt
 │   ├── 02_qc_agent_prompt.txt                   # Phase 2: RNA-seq diagnostic gates, TMM-voom & PCA QC prompt
 │   ├── 03_her2_classification_agent_prompt.txt  # Phase 3: Multimodal ML classification & reclassification prompt
-│   ├── 04a_user_reports_request.txt             # Phase 4 User Directive: Strategic client prompt for reports
-│   └── 04b_client_reports_generation_prompt.txt # Phase 4 Technical Prompt: 12-section technical specification
+│   ├── 04a_user_reports_request.txt             # Phase 4 User Directive: Strategic user prompt for reports
+│   └── 04b_technical_reports_generation_prompt.txt # Phase 4 Technical Prompt: 12-section technical specification
 ├── src/                                      <-- Executable analytical scripts and pipeline code
 │   ├── adjudicate_her2.py                    # Phase 1: Clinical adjudication & discordance auditing
 │   ├── normalize_rnaseq.R                    # Phase 2: Diagnostic profiling, TMM-voom & PCA outlier screening
@@ -82,7 +82,7 @@ directory layout:
 │   ├── her2_pipeline_milestone2.py           # Phase 3B: Milestone 2 (5-Fold CV, RF/LR threshold shifting, Plot 7)
 │   ├── her2_unsupervised_subsets.py          # Phase 3C: Milestone 3 (PAM50 intrinsic clustering, Plots 9 & 10)
 │   ├── her2_pipeline_step7.py                # Phase 3D: Milestone 4/5 (Prioritization, Plot 8, metastasis)
-│   └── compile_client_reports.py             # Phase 4: Standalone HTML/MD technical report compiler
+│   └── compile_reports.py                    # Phase 4: Standalone HTML/MD technical report compiler
 └── results/                                  <-- Quantitative results, serializations & figures
     ├── her2_classification_results.xlsx      # Master 11-sheet audited Excel classification workbook
     ├── her2_adjudication_summary.xlsx        # 3-sheet clinical contingency and discordance workbook
@@ -112,7 +112,7 @@ directory layout:
     1. Raw Input Data (data/): The raw input datasets (brca_tcga_clinical_data.csv,
        brca_tcga_erbb2_copy_number.csv, tcga.brca.rsem.csv; ~184 MB total) have 
        been omitted from this deliverable folder as they were originally provided 
-       by the client.
+       as study source data.
     2. Large Normalized Matrices: The two Level 3 re-normalized expression 
        matrices (~632 MB combined):
          - matrix_normalized_linear.csv (313.6 MB)
@@ -123,7 +123,7 @@ directory layout:
     generators operate standalone from the enclosed binary bundles (milestone1_bundle.pkl, 
     production_models.pkl, step7_bundle.pkl). 
 
-    If full end-to-end regeneration from raw data is desired, place the client 
+    If full end-to-end regeneration from raw data is desired, place the source 
     'data/' folder in the project root directory and run:
         Rscript src/normalize_rnaseq.R
 
@@ -154,15 +154,15 @@ formally archived in the 'prompts/' directory:
      DeLong test, cost-sensitive 5-fold CV, Youden shifting, and reclassification tiering.
 
 4. prompts/04a_user_reports_request.txt:
-   - Purpose: High-level client/user strategic directive initiating Phase 4.
-   - Origin: Direct user prompt instructing the agent to plan and draft client-quality 
+   - Purpose: High-level user strategic directive initiating Phase 4.
+   - Origin: Direct user prompt instructing the agent to plan and draft publication-quality 
      technical reports in HTML and Markdown format, and initiating /grill-me.
    - Note on Lineage: This directive pertains specifically to Phase 4 report generation. 
      It directly yielded the comprehensive technical specification in file 04b.
 
-5. prompts/04b_client_reports_generation_prompt.txt:
+5. prompts/04b_technical_reports_generation_prompt.txt:
    - Purpose: Detailed technical execution specification derived from 04a.
-   - Target Script: src/compile_client_reports.py
+   - Target Script: src/compile_reports.py
    - Directives: Prescribes standalone report architectures, master cohort flow 
      reconciliation, exact tabular schema, clinical spotlights, embedded figures, 
      and deliverables packaging.
@@ -176,13 +176,13 @@ and technical report generation (Steps 3-6) execute standalone using the pre-com
 binary bundles in results/.
 
 If executing Steps 1 and 2 from scratch to re-derive clinical calls or regenerate 
-genomic count matrices, ensure that the client raw data repository is placed at 
+genomic count matrices, ensure that the raw data repository is placed at 
 'data/' containing:
   - data/brca_tcga_clinical_data.csv
   - data/brca_tcga_erbb2_copy_number.csv
   - data/tcga.brca.rsem.csv
 
-To reproduce the complete analysis from raw data to client reports:
+To reproduce the complete analysis from raw data to technical reports:
 
 # Step 1: Clinical Adjudication & Discordance Auditing (Requires data/)
 python3 src/adjudicate_her2.py
@@ -203,8 +203,8 @@ python3 src/her2_unsupervised_subsets.py
 # Step 6: Step 7 Analysis (Indeterminate Prioritization, Plot 8, Metastasis)
 python3 src/her2_pipeline_step7.py
 
-# Step 7: Compile Standalone Client Technical Reports (HTML & Markdown)
-python3 src/compile_client_reports.py
+# Step 7: Compile Standalone Technical Reports (HTML & Markdown)
+python3 src/compile_reports.py
 
 ================================================================================
 END OF README.txt

@@ -437,25 +437,17 @@ pre code {
   <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
 </head>
 <body>
-  <div class="layout-wrapper">
-    <!-- Sticky Static Sidebar Navigation -->
-    <aside class="sidebar-nav">
-      <div class="sidebar-title">Quick Jump Navigation</div>
+  <div class="layout-container">
+    <nav class="sidebar">
+      <div class="sidebar-title">Quick Navigation</div>
       <ul class="nav-list">
-        <li><a href="#sec-1" class="nav-link">1. Executive Summary</a></li><li><a href="#sec-2" class="nav-link">2. Clinical Adjudication</a></li><li><a href="#sec-3" class="nav-link">3. RNA-Seq Profiling & Gate C</a></li><li><a href="#sec-4" class="nav-link">4. PCA Outliers & Re-Normalization</a></li><li><a href="#sec-5" class="nav-link">5. Reproducibility & Audit Trail</a></li>
+        <li class="nav-item"><a href="#sec-1" class="nav-link">1. Executive Summary</a></li><li class="nav-item"><a href="#sec-2" class="nav-link">2. Clinical Adjudication</a></li><li class="nav-item"><a href="#sec-3" class="nav-link">3. RNA-Seq Profiling & Gate C</a></li><li class="nav-item"><a href="#sec-4" class="nav-link">4. PCA Outliers & Re-Normalization</a></li><li class="nav-item"><a href="#sec-5" class="nav-link">5. Reproducibility & Audit Trail</a></li>
       </ul>
-    </aside>
-
-    <!-- Main Scrollable Report Content -->
-    <main class="main-content">
-      <div class="report-card">
-        <header class="report-header">
-          <h1 class="report-title">TCGA-BRCA HER2 Quality Control, Clinical Adjudication & RNA-Seq Preprocessing Technical Report</h1>
-          <div class="report-subtitle">Methodological Framework, Diagnostic Logic Gates, Outlier Screening, and Master Cohort Reconciliation</div>
-        </header>
-
-        <article class="report-body">
-          
+    </nav>
+    <main class="content-area">
+      <h1>TCGA-BRCA HER2 Quality Control, Clinical Adjudication & RNA-Seq Preprocessing Technical Report</h1>
+      <div class="subtitle">Methodological Framework, Diagnostic Logic Gates, Outlier Screening, and Master Cohort Reconciliation</div>
+      
 <h2 id="sec-1">1. Executive Summary &amp; Master Cohort
 Reconciliation</h2>
 <h3 id="project-objective-clinical-context">1.1 Project Objective &amp;
@@ -1159,93 +1151,38 @@ untainted foundation for the multimodal machine learning classification
 documented in Report 2.</p>
 </blockquote>
 
-        </article>
-      </div>
     </main>
   </div>
 
-  <!-- Lightbox Modal for High-Resolution Plot Inspection -->
-  <div id="imageModal" class="lightbox-modal">
-    <div class="lightbox-close">&times;</div>
-    <img id="modalImage" class="lightbox-content" src="" alt="High-Resolution Plot">
+  <div id="imageModal" class="modal-overlay" onclick="closeModal()">
+    <img id="modalImg" class="modal-content" src="" alt="Expanded View" />
   </div>
 
-  
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  // Lightbox Modal Handling
-  var modal = document.getElementById('imageModal');
-  var modalImg = document.getElementById('modalImage');
-  var closeBtn = document.querySelector('.lightbox-close');
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      const modal = document.getElementById("imageModal");
+      const modalImg = document.getElementById("modalImg");
+      const images = document.querySelectorAll(".figure-card img");
 
-  document.querySelectorAll('.figure-card img').forEach(function(img) {
-    img.addEventListener('click', function() {
-      modalImg.src = this.src;
-      modal.classList.add('active');
+      images.forEach(img => {
+        img.addEventListener("click", function(e) {
+          e.stopPropagation();
+          modalImg.src = this.src;
+          modal.classList.add("active");
+        });
+      });
     });
-  });
 
-  if (closeBtn) {
-    closeBtn.addEventListener('click', function() {
-      modal.classList.remove('active');
-    });
-  }
-
-  if (modal) {
-    modal.addEventListener('click', function(e) {
-      if (e.target !== modalImg) {
-        modal.classList.remove('active');
-      }
-    });
-  }
-
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && modal) {
-      modal.classList.remove('active');
+    function closeModal() {
+      const modal = document.getElementById("imageModal");
+      modal.classList.remove("active");
     }
-  });
 
-  // Deterministic smooth scrolling on navigation link click
-  document.querySelectorAll('.nav-link').forEach(function(link) {
-    link.addEventListener('click', function(e) {
-      var href = this.getAttribute('href');
-      if (href && href.startsWith('#')) {
-        var targetId = href.substring(1);
-        var targetEl = document.getElementById(targetId);
-        if (targetEl) {
-          e.preventDefault();
-          targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          history.pushState(null, null, href);
-          document.querySelectorAll('.nav-link').forEach(function(l) { l.classList.remove('active'); });
-          this.classList.add('active');
-        }
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        closeModal();
       }
     });
-  });
-
-  // Scrollspy for Sidebar Navigation
-  var sections = document.querySelectorAll('h2[id], h3[id]');
-  var navLinks = document.querySelectorAll('.nav-link');
-
-  window.addEventListener('scroll', function() {
-    var scrollPos = window.scrollY + 100;
-    var currentId = '';
-
-    sections.forEach(function(section) {
-      if (section.offsetTop <= scrollPos) {
-        currentId = section.getAttribute('id');
-      }
-    });
-
-    navLinks.forEach(function(link) {
-      link.classList.remove('active');
-      if (link.getAttribute('href') === '#' + currentId) {
-        link.classList.add('active');
-      }
-    });
-  });
-});
-</script>
-
+  </script>
 </body>
 </html>

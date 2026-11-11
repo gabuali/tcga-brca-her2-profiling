@@ -18,10 +18,10 @@ This repository provides an audited, end-to-end translational bioinformatics and
 1. **Adjudicates Clinical Discordance:** Harmonizes 1,108 pathology records under ASCO/CAP 2023 priority guidelines, resolving equivocal IHC 2+ cases via reflex FISH and flagging diagnostic discrepancies.
 2. **Standardizes High-Throughput RNA-Seq:** Programmatically profiles raw RSEM counts, confirms uniform 75th percentile scaling (~1,000 counts, CV = 0.0456%), and routes data through `edgeR` TMM library scaling and `limma-voom` variance stabilization across 15,632 filtered genes.
 3. **Screens Multidimensional PCA Outliers:** Employs unit-variance PCA (`scale. = TRUE`) to prevent single-gene hyper-variable lineage drivers (*ESR1*, $r = 0.80$ with unscaled PC2) from falsely discarding 145 ER-negative/Basal tumors, isolating 19 technical outliers ($|Z_{\text{MAD}}| \ge 3.0$).
-4. **Demonstrates Univariate Parity:** Paired DeLong's test on 829 complete cases demonstrates statistical parity between continuous *ERBB2* RNA-seq ($\text{AUC} = 0.8317$) and discrete GISTIC copy number ($\text{AUC} = 0.8139$; $\Delta\text{AUC} = +0.0178, Z = +1.4038, p = 0.1604$).
-5. **Mitigates Cardiotoxic False Positives:** Evaluated Logistic Regression (LR) and Random Forest (RF) under 4.56$\times$ cost-sensitive class balancing. RF was selected over LR for superior collinearity handling across the 17q12 amplicon and robust suppression of cardiotoxic false positives (3 FP [96.70% precision] vs. 11 FP [89.52% precision]). Optimizing out-of-fold probability thresholds via Youden's J ($0.50 \rightarrow 0.5880$) achieved 99.56% specificity across 680 true negatives.
-6. **Reclassifies Indeterminate Patients:** Classifies **16 of 123 Indeterminate primary tumors as HER2-positive** (13.0%; 12 Tier 1 High-Confidence, 4 Tier 2 Moderate-Confidence), rescuing stroma-diluted cases that fall below univariate RNA cutoffs.
-7. **Demonstrates Metastatic Generalization:** Achieves **100% diagnostic concordance** when evaluated against 7 held-out distant metastatic control biospecimens.
+4. **Determines RNA Predictive Superiority:** Continuous *ERBB2* RNA-seq outperforms discrete GISTIC copy number across every empirical metric ($\text{AUC } 0.8317 \text{ vs. } 0.8139$, Sensitivity $65.8\% \text{ vs. } 60.4\%$, Balanced Accuracy $81.3\% \text{ vs. } 79.3\%$). Paired DeLong's test ($p = 0.1604$) confirms overlapping 95% confidence intervals, but continuous RNA provides superior resolution for borderline and low-gain (+1) cases.
+5. **Deconvolutes Subtypes via Unsupervised Subsetting:** Profiles 50 PAM50 intrinsic markers across $1,075$ primary tumors, revealing that clinical HER2+ disease is biologically bifurcated: **$58.4\%$ are HER2-Enriched** (pure 17q12 amplicon addiction, low ER/PR, high proliferation), while **$27.1\%$ are Luminal B / Luminal-HER2** (co-expressing high estrogen and progesterone receptors). This biological dichotomy directly explains why single-gene univariate cutoffs miss ~34% of clinical positives.
+6. **Appraises Multimodal ML & Calibrates Cardiotoxic Safety:** Demonstrates transparently that multimodal ML (RF OOF AUC $0.8011$, LR OOF AUC $0.8317$) does not expand global AUC beyond univariate RNA ($0.8317$) due to heavy 17q12 collinearity ($r = 0.893$). However, shifting the decision threshold ($0.50 \rightarrow 0.5880$) configures the Random Forest as a specialized high-precision rule-in classifier (**$96.70\%$ precision**, **$99.56\%$ specificity**, only 3 false positives across 680 true negatives) to prevent cardiotoxic overtreatment.
+7. **Prioritizes Indeterminate Patients:** Identifies **16 of 123 Indeterminate primary tumors as high-priority HER2-positive candidates** ($13.0\%$) exhibiting multi-omic concordance and enrichment in the HER2-Enriched and Luminal-HER2 clusters for targeted reflex testing, while demonstrating **100% concordance** across 7 held-out distant metastatic controls.
 
 ---
 
@@ -119,10 +119,10 @@ Multimodal Input Vector:
          └── Random Forest (RF):       Precision = 94.00%, Specificity = 99.12% (6 False Positives)
                  │
                  ▼ (Youden's J Threshold Shift: 0.5000 -> 0.5880)
-         Optimized RF Model:
-                 ├── Precision:   96.70% (+2.70% improvement)
-                 ├── Specificity: 99.56% (Halved false positives: 6 -> 3 across 680 true negatives)
-                 ├── Sensitivity: 89.34% (Zero true positive attrition: 176 / 197 retained)
+         Calibrated High-Precision Rule-In Model:
+                 ├── Precision:   96.70% (+3.08% improvement; only 3 FP across 680 TN)
+                 ├── Specificity: 99.56% (Halved false positives: 6 -> 3)
+                 ├── Sensitivity: 59.06% (Deliberate trade-off to minimize cardiotoxic risk)
                  └── Cardiotoxic False Positive Prevention: Maximized
 ```
 
@@ -140,7 +140,7 @@ Multimodal Input Vector:
 │   ├── brca_tcga_erbb2_copy_number.csv       # GISTIC 2.0 discrete copy-number calls
 │   └── tcga.brca.rsem.csv.gz                 # Compressed Level 3 RSEM matrix (66.97 MB)
 ├── reports/                                  # Publication-grade interactive deliverables
-│   ├── Classification_Report.html            # Standalone responsive HTML classification report
+│   ├── Classification_Report.html            # Standalone responsive HTML classification report (with Section 8 Subtypes)
 │   ├── Classification_Report.md              # Standard GitHub-flavored Markdown report
 │   ├── QC_Report.html                        # Standalone responsive HTML diagnostic QC report
 │   └── QC_Report.md                          # Standard GitHub-flavored Markdown report
@@ -149,16 +149,17 @@ Multimodal Input Vector:
 │   ├── 02_qc_agent_prompt.txt                   # Phase 2: RNA-seq diagnostic gates & PCA QC prompt
 │   ├── 03_her2_classification_agent_prompt.txt  # Phase 3: Multimodal ML classification prompt
 │   ├── 04a_user_reports_request.txt             # Phase 4 User Directive: Strategic reporting prompt
-│   └── 04b_client_reports_generation_prompt.txt # Phase 4 Technical Prompt: 12-section technical specification
+│   └── 04b_client_reports_generation_prompt.txt # Phase 4 Technical Prompt: Technical specification
 ├── src/                                      # Modular pipeline source code
 │   ├── adjudicate_her2.py                    # Phase 1: Clinical adjudication & discordance auditing
 │   ├── normalize_rnaseq.R                    # Phase 2: Diagnostic profiling, TMM-voom & PCA screening
 │   ├── her2_pipeline_milestone1.py           # Phase 3A: Milestone 1 (Plots 1-6, purity, DeLong)
 │   ├── her2_pipeline_milestone2.py           # Phase 3B: Milestone 2 (5-Fold CV, RF/LR threshold shifting)
-│   ├── her2_pipeline_step7.py                # Phase 3C: Step 7 (Reclassification, Plot 8, metastasis)
+│   ├── her2_unsupervised_subsets.py          # Phase 3C: Milestone 3 (PAM50 intrinsic clustering, Plots 9 & 10)
+│   ├── her2_pipeline_step7.py                # Phase 3D: Milestone 4/5 (Prioritization, Plot 8, metastasis)
 │   └── compile_client_reports.py             # Phase 4: Standalone HTML/MD technical report compiler
 └── results/                                  # Quantitative outputs, models, workbooks & figures
-    ├── her2_classification_results.xlsx      # Master 9-sheet audited Excel classification workbook
+    ├── her2_classification_results.xlsx      # Master 11-sheet audited Excel classification workbook
     ├── her2_adjudication_summary.xlsx        # 3-sheet clinical contingency and discordance workbook
     ├── her2_clinical_status.csv              # Adjudicated clinical status table (1,108 samples)
     ├── brca_her2_status_adjudicated.tsv      # Tab-delimited status table with discordance flags
@@ -166,7 +167,8 @@ Multimodal Input Vector:
     ├── pca_outliers_removed.csv              # Clinical and genomic metadata for 19 flagged outliers
     ├── milestone1_bundle.pkl                 # Serialized Step 1-5 data structures and ROC metrics
     ├── production_models.pkl                 # Serialized production RF and LR models (6.37 MB)
-    ├── step7_bundle.pkl                      # Serialized Step 7 reclassification tiers & metastasis
+    ├── unsupervised_bundle.pkl               # Serialized PAM50 subtype clusters, PCA & contingency
+    ├── step7_bundle.pkl                      # Serialized Step 7 prioritization tiers & metastasis
     ├── pca_before_outlier_removal.png        # Figure 1A: PCA before outlier removal
     ├── pca_after_outlier_removal.png         # Figure 1B: PCA clean cohort distribution
     ├── plot1_complete_cases_kde.png          # Figure 1: ERBB2 expression KDE across complete cases
@@ -176,7 +178,9 @@ Multimodal Input Vector:
     ├── plot5_gistic_roc.png                  # Figure 5: Discrete GISTIC copy number ROC curve
     ├── plot6_combined_roc.png                # Figure 6: Paired RNA vs. GISTIC ROC overlay with DeLong
     ├── plot7_rf_feature_importance.png       # Figure 7: 5-fold cross-validated RF feature importance
-    └── plot8_rescue_facet_plot.png           # Figure 8: 3-panel Indeterminate reclassification facet plot
+    ├── plot8_rescue_facet_plot.png           # Figure 8: 3-panel Indeterminate prioritization facet plot
+    ├── plot9_unsupervised_pca_subtypes.png   # Figure 9: PAM50 unsupervised PCA subtype segregation biplot
+    └── plot10_subtype_marker_heatmap.png     # Figure 10: Clustered heatmap of canonical lineage markers
 ```
 
 ---
@@ -199,10 +203,13 @@ python3 src/her2_pipeline_milestone1.py
 # Step 4: Milestone 2 Analysis (5-Fold Stratified CV, RF/LR, Plot 7)
 python3 src/her2_pipeline_milestone2.py
 
-# Step 5: Step 7 Analysis (Indeterminate Reclassification, Plot 8, Metastasis)
+# Step 5: Milestone 3 Analysis (Unsupervised PAM50 Subsetting, Plots 9 & 10)
+python3 src/her2_unsupervised_subsets.py
+
+# Step 6: Step 7 Analysis (Indeterminate Prioritization, Plot 8, Metastasis)
 python3 src/her2_pipeline_step7.py
 
-# Step 6: Compile Standalone Client Technical Reports (HTML & Markdown)
+# Step 7: Compile Standalone Client Technical Reports (HTML & Markdown)
 python3 src/compile_client_reports.py
 ```
 

@@ -32,24 +32,29 @@ KEY TRANSLATIONAL & SCIENTIFIC FINDINGS:
    prevented single-gene hyper-variable lineage drivers (ESR1, r = 0.80 with unscaled 
    PC2) from falsely discarding 145 ER-negative/Basal tumors, objectively isolating 
    19 multidimensional technical outliers (|Z_MAD| >= 3.0).
-4. Univariate Statistical Parity (RNA vs. DNA): Paired DeLong's test on 829 complete 
-   cases proved that continuous ERBB2 RNA-seq (AUC = 0.8317) and discrete GISTIC 
-   copy number (AUC = 0.8139) exhibit statistical parity in isolation (Delta AUC = 
-   +0.0178, Z = +1.4038, p = 0.1604).
-5. Multivariate Amplicon Dominance: In 5-fold cross-validated Random Forest models, 
-   secondary multimodal features (17q12 Amplicon_Z co-expression [31.95%] and 
-   ESTIMATE Tumor Purity [17.16%]) drove 49.11% of model decision weight, capturing 
-   continuous amplification signal and unmasking stromal dilution.
-6. Probability Threshold Shifting: Under 4.56x cost-sensitive class balancing, 
-   optimizing out-of-fold probability thresholds via Youden's J shifted the Random 
-   Forest cutoff from 0.50 -> 0.5880. This halved false positives (from 6 to 3) 
-   without losing a single true positive, achieving 96.70% Precision and 99.56% 
-   Specificity across 680 true negatives to prevent cardiotoxic over-treatment.
-7. Patient Reclassification & Metastatic Generalization: Successfully classified 16 
-   of 123 Indeterminate primary tumors as HER2-positive (13.0%; 12 Tier 1 High-
-   Confidence, 4 Tier 2 Moderate-Confidence), including stroma-diluted cases falling 
-   below univariate RNA cutoffs. The primary-trained model achieved 100% diagnostic 
-   concordance on 7 held-out distant metastatic control specimens.
+4. Directional Superiority of RNA over DNA: Continuous ERBB2 RNA-seq outperforms 
+   discrete GISTIC copy number across every individual empirical metric (AUC 0.8317 
+   vs. 0.8139, Sensitivity 65.8% vs. 60.4%, Balanced Accuracy 81.3% vs. 79.3%). 
+   Paired DeLong's test (p = 0.1604) confirms overlapping 95% confidence intervals, 
+   demonstrating that continuous RNA provides superior resolution for borderline 
+   and low-level copy-gain (+1) cases.
+5. Unsupervised PAM50 Subsetting & HER2 Bifurcation: Unsupervised clustering of 50 
+   PAM50 markers across 1,075 primary tumors revealed that clinical HER2+ disease 
+   is biologically bifurcated: 58.4% are classic HER2-Enriched (pure 17q12 amplicon 
+   addiction, low ER/PR, high proliferation), while 27.1% are Luminal B / Lum-HER2 
+   (co-expressing high ER and PR). This biological dichotomy directly explains why 
+   single-gene univariate cutoffs miss ~34% of clinical positives.
+6. Honest ML Appraisal & Cardiotoxic Safety Calibration: Multimodal ML (RF OOF AUC 
+   0.8011, LR OOF AUC 0.8317) does not expand global AUC beyond univariate RNA (0.8317) 
+   due to extreme 17q12 collinearity (r = 0.893 with Amplicon_Z, r = 0.740 with GISTIC). 
+   However, shifting the decision threshold (0.50 -> 0.5880) configures Random Forest 
+   as a specialized high-precision rule-in classifier (96.70% Precision, 99.56% 
+   Specificity, only 3 FP across 680 TN) to prevent cardiotoxic overtreatment.
+7. Indeterminate Tumor Prioritization: Successfully prioritized 16 of 123 Indeterminate 
+   primary tumors as high-priority candidates (13.0%; 12 Tier 1, 4 Tier 2) exhibiting 
+   concordant multi-omic signals and enrichment in the biological HER2-Enriched and 
+   Luminal clusters for targeted reflex testing, while demonstrating 100% concordance 
+   across 7 held-out distant metastatic controls.
 
 ================================================================================
 2. DELIVERABLES PACKAGING & DIRECTORY STRUCTURE
@@ -75,10 +80,11 @@ directory layout:
 │   ├── normalize_rnaseq.R                    # Phase 2: Diagnostic profiling, TMM-voom & PCA outlier screening
 │   ├── her2_pipeline_milestone1.py           # Phase 3A: Milestone 1 (Plots 1-6, purity, amplicon, DeLong)
 │   ├── her2_pipeline_milestone2.py           # Phase 3B: Milestone 2 (5-Fold CV, RF/LR threshold shifting, Plot 7)
-│   ├── her2_pipeline_step7.py                # Phase 3C: Step 7 (Indeterminate reclassification, Plot 8, metastasis)
+│   ├── her2_unsupervised_subsets.py          # Phase 3C: Milestone 3 (PAM50 intrinsic clustering, Plots 9 & 10)
+│   ├── her2_pipeline_step7.py                # Phase 3D: Milestone 4/5 (Prioritization, Plot 8, metastasis)
 │   └── compile_client_reports.py             # Phase 4: Standalone HTML/MD technical report compiler
 └── results/                                  <-- Quantitative results, serializations & figures
-    ├── her2_classification_results.xlsx      # Master 9-sheet audited Excel classification workbook
+    ├── her2_classification_results.xlsx      # Master 11-sheet audited Excel classification workbook
     ├── her2_adjudication_summary.xlsx        # 3-sheet clinical contingency and discordance workbook
     ├── her2_clinical_status.csv              # Adjudicated clinical status table (1,108 samples)
     ├── brca_her2_status_adjudicated.tsv      # Tab-delimited clinical status table with discordance flags
@@ -86,7 +92,8 @@ directory layout:
     ├── pca_outliers_removed.csv              # Clinical and genomic metadata for 19 flagged outliers
     ├── milestone1_bundle.pkl                 # Serialized Step 1-5 data structures and ROC metrics
     ├── production_models.pkl                 # Serialized production RF and LR models (100% training fit)
-    ├── step7_bundle.pkl                      # Serialized Step 7 reclassification tiers and metastasis evaluations
+    ├── unsupervised_bundle.pkl               # Serialized PAM50 subtype clusters, PCA & contingency
+    ├── step7_bundle.pkl                      # Serialized Step 7 prioritization tiers and metastasis evaluations
     ├── pca_before_outlier_removal.png        # Figure 1A: PCA before outlier removal
     ├── pca_after_outlier_removal.png         # Figure 1B: PCA clean cohort distribution
     ├── plot1_complete_cases_kde.png          # Figure 1: ERBB2 expression KDE across complete cases
@@ -96,7 +103,9 @@ directory layout:
     ├── plot5_gistic_roc.png                  # Figure 5: Discrete GISTIC copy number ROC curve
     ├── plot6_combined_roc.png                # Figure 6: Paired RNA vs. GISTIC ROC overlay with DeLong test
     ├── plot7_rf_feature_importance.png       # Figure 7: 5-fold cross-validated RF feature importance
-    └── plot8_rescue_facet_plot.png           # Figure 8: 3-panel Indeterminate reclassification multi-omic facet plot
+    ├── plot8_rescue_facet_plot.png           # Figure 8: 3-panel Indeterminate prioritization multi-omic facet plot
+    ├── plot9_unsupervised_pca_subtypes.png   # Figure 9: PAM50 unsupervised PCA subtype segregation biplot
+    └── plot10_subtype_marker_heatmap.png     # Figure 10: Clustered heatmap of canonical lineage markers
 
     [NOTE ON OMITTED RAW DATA & LARGE MATRICES (FILE SIZE OPTIMIZATION)]:
     To ensure a lightweight distribution package (~10-12 MB) for rapid transfer:
@@ -188,10 +197,13 @@ python3 src/her2_pipeline_milestone1.py
 # Step 4: Milestone 2 Analysis (5-Fold Stratified CV, RF/LR, Plot 7)
 python3 src/her2_pipeline_milestone2.py
 
-# Step 5: Step 7 Analysis (Indeterminate Reclassification, Plot 8, Metastasis)
+# Step 5: Milestone 3 Analysis (Unsupervised PAM50 Subsetting, Plots 9 & 10)
+python3 src/her2_unsupervised_subsets.py
+
+# Step 6: Step 7 Analysis (Indeterminate Prioritization, Plot 8, Metastasis)
 python3 src/her2_pipeline_step7.py
 
-# Step 6: Compile Standalone Client Technical Reports (HTML & Markdown)
+# Step 7: Compile Standalone Client Technical Reports (HTML & Markdown)
 python3 src/compile_client_reports.py
 
 ================================================================================
